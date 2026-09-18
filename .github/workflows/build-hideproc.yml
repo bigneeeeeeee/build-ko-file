@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: hideproc for ${{ matrix.tag }}
+    name: hideproc ${{ matrix.kmi }}-${{ matrix.commit }}${{ matrix.suffix }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -77,7 +77,7 @@ jobs:
           - { kmi: "6.12", commit: "844001fb8721", suffix: "-ab14552068-4k", group: "all" }
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Skip non-selected matrix entries
         if: ${{ matrix.group == 'all' && github.event.inputs.scope != 'all' }}
