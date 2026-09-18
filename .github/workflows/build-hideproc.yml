@@ -23,16 +23,6 @@ jobs:
           which clang ld.lld make || true
           echo "LLVM_VERSION: $(clang --version | head -1)"
 
-      - name: Fetch Android GKI clang (12.0.5 r416183b - same as device)
-        run: |
-          curl -sL --retry 3 \
-            "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r416183b.tar.gz" \
-            -o /tmp/clang.tar.gz
-          ls -la /tmp/clang.tar.gz
-          mkdir -p /opt/clang && tar -xzf /tmp/clang.tar.gz -C /opt/clang
-          ls /opt/clang/bin/ | head -5
-          echo "/opt/clang/bin" >> "$GITHUB_PATH"
-
       - name: Clone kernel (android12-5.10, official GKI 5.10.226 tag)
         run: |
           git clone --depth 1 --branch android12-5.10.226_r00 \
@@ -41,8 +31,8 @@ jobs:
       - name: Prepare config (gki_defconfig + release string)
         run: |
           cd kernel-src
-          export PATH="/opt/clang/bin:$PATH"
-          export CC=clang CROSS_COMPILE=aarch64-linux-gnu-
+          export PATH="/usr/bin:$PATH"
+          export CC=clang CROSS_COMPILE=aarch64-linux-gnu- CLANG_TRIPLE=aarch64-linux-gnu-
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 mrproper
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 gki_defconfig
           ./scripts/config \
@@ -63,8 +53,7 @@ jobs:
       - name: Build kernel preps
         run: |
           cd kernel-src
-          export PATH="/opt/clang/bin:$PATH"
-          export CC=clang CROSS_COMPILE=aarch64-linux-gnu-
+          export CC=clang CROSS_COMPILE=aarch64-linux-gnu- CLANG_TRIPLE=aarch64-linux-gnu-
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 -j"$(nproc)" modules_prepare
           mkdir -p ../dummymod
           echo 'obj-m := dummy.o' > ../dummymod/Makefile
@@ -74,8 +63,7 @@ jobs:
 
       - name: Build hideproc.ko
         run: |
-          export PATH="/opt/clang/bin:$PATH"
-          export CC=clang CROSS_COMPILE=aarch64-linux-gnu-
+          export CC=clang CROSS_COMPILE=aarch64-linux-gnu- CLANG_TRIPLE=aarch64-linux-gnu-
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 \
             KCFLAGS="-w" \
             -C "$PWD/kernel-src" M="$PWD/src" modules
