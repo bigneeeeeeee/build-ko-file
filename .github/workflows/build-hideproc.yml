@@ -11,14 +11,11 @@ on:
         options:
           - current
           - all
-  push:
-    branches: [main]
 
 jobs:
   build:
     name: hideproc for ${{ matrix.tag }}
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' || github.event.inputs.scope == 'current' || github.event.inputs.scope == 'all' }}
     strategy:
       fail-fast: false
       matrix:
@@ -83,7 +80,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Skip non-selected matrix entries
-        if: ${{ github.event_name != 'push' && matrix.group == 'all' && github.event.inputs.scope == 'current' }}
+        if: ${{ matrix.group == 'all' && github.event.inputs.scope != 'all' }}
         run: echo "scope=current, skipping all-group"; exit 78
 
       - name: Clone kernel (GKI common)
