@@ -16,7 +16,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq clang lld make flex bison \
-            libssl-dev bc kmod cpio rsync
+            libssl-dev libelf-dev bc kmod cpio rsync \
+            elfutils libdw-dev python3 file
           echo "PATH check:"
           which clang ld.lld make || true
           echo "LLVM_VERSION: $(clang --version | head -1)"
@@ -39,7 +40,13 @@ jobs:
             --enable CONFIG_KALLSYMS_ALL \
             --disable CONFIG_MODULE_SIG \
             --disable CONFIG_MODULE_SIG_FORCE \
+            --disable CONFIG_MODULE_SIG_ALL \
+            --disable CONFIG_SYSTEM_TRUSTED_KEYS \
+            --disable CONFIG_DEBUG_INFO \
             --set-str CONFIG_LOCALVERSION "-android12-9-00051-ga13323220e07-ab12931418"
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
+          # debug info off sab-se pehle (build time kam + modpost errors bachao)
+          ./scripts/config --disable CONFIG_DEBUG_INFO
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
 
       - name: Build kernel preps
