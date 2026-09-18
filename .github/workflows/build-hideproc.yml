@@ -17,10 +17,21 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq clang lld make flex bison \
             libssl-dev libelf-dev bc kmod cpio rsync \
-            elfutils libdw-dev python3 file
+            elfutils libdw-dev python3 file \
+            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           echo "PATH check:"
           which clang ld.lld make || true
           echo "LLVM_VERSION: $(clang --version | head -1)"
+
+      - name: Fetch Android GKI clang (12.0.5 r416183b - same as device)
+        run: |
+          curl -sL --retry 3 \
+            "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r416183b.tar.gz" \
+            -o /tmp/clang.tar.gz
+          ls -la /tmp/clang.tar.gz
+          mkdir -p /opt/clang && tar -xzf /tmp/clang.tar.gz -C /opt/clang
+          ls /opt/clang/bin/ | head -5
+          echo "/opt/clang/bin" >> "$GITHUB_PATH"
 
       - name: Clone kernel (android12-5.10, official GKI 5.10.226 tag)
         run: |
@@ -30,7 +41,9 @@ jobs:
       - name: Prepare config (gki_defconfig + release string)
         run: |
           cd kernel-src
-          make ARCH=arm64 mrproper
+          export PATH="/opt/clang/bin:$PATH"
+          export CC=clang CROSS_COMPILE=aarch64-linux-gnu-
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 mrproper
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 gki_defconfig
           ./scripts/config \
             --enable CONFIG_MODULES \
@@ -45,13 +58,13 @@ jobs:
             --disable CONFIG_DEBUG_INFO \
             --set-str CONFIG_LOCALVERSION "-android12-9-00051-ga13323220e07-ab12931418"
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
-          # debug info off sab-se pehle (build time kam + modpost errors bachao)
-          ./scripts/config --disable CONFIG_DEBUG_INFO
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
 
       - name: Build kernel preps
         run: |
           cd kernel-src
+          export PATH="/opt/clang/bin:$PATH"
+          export CC=clang CROSS_COMPILE=aarch64-linux-gnu-
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 -j"$(nproc)" modules_prepare
           mkdir -p ../dummymod
           echo 'obj-m := dummy.o' > ../dummymod/Makefile
@@ -61,6 +74,8 @@ jobs:
 
       - name: Build hideproc.ko
         run: |
+          export PATH="/opt/clang/bin:$PATH"
+          export CC=clang CROSS_COMPILE=aarch64-linux-gnu-
           make ARCH=arm64 LLVM=1 LLVM_IAS=1 \
             KCFLAGS="-w" \
             -C "$PWD/kernel-src" M="$PWD/src" modules
