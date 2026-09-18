@@ -1,0 +1,146 @@
+name: Build hideproc.ko
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Build scope'
+        required: true
+        default: 'current'
+        type: choice
+        options:
+          - current
+          - all
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: hideproc for ${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event.inputs.scope == 'current' || github.event.inputs.scope == 'all' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ============ CURRENT DEVICE (default) ============
+          - { kmi: "5.10", commit: "a13323220e07", suffix: "-ab12931418", group: "current" }
+
+          # ============ KMI 6.1 (Android 14) — "all" mode ============
+          - { kmi: "6.1",  commit: "a2521ca27699", suffix: "-ab13294383", group: "all" }
+          - { kmi: "6.1",  commit: "a3b9c44908dd", suffix: "-ab13320413", group: "all" }
+          - { kmi: "6.1",  commit: "ca0ef6d17716", suffix: "-ab13624819", group: "all" }
+          - { kmi: "6.1",  commit: "0c3d559bcd85", suffix: "-ab14529422", group: "all" }
+          - { kmi: "6.1",  commit: "6ab8c9a86a33", suffix: "-ab14396278", group: "all" }
+          - { kmi: "6.1",  commit: "44bda9e8f6e9", suffix: "-ab13792638", group: "all" }
+          - { kmi: "6.1",  commit: "965475777129", suffix: "-mi", group: "all" }
+          - { kmi: "6.1",  commit: "09f1c0074ad7", suffix: "-ab14226177", group: "all" }
+          - { kmi: "6.1",  commit: "74d1702dab4d", suffix: "-ab14669069", group: "all" }
+          - { kmi: "6.1",  commit: "eaa643a2c0ee", suffix: "-ab14763719", group: "all" }
+          - { kmi: "6.1",  commit: "ce140c0e5bf5", suffix: "-ab15450923", group: "all" }
+          - { kmi: "6.1",  commit: "752d9c17787d", suffix: "-ab15574904", group: "all" }
+
+          # ============ KMI 6.6 (Android 15) — "all" mode ============
+          - { kmi: "6.6",  commit: "54dcbfbef792", suffix: "-ab12368803-4k", group: "all" }
+          - { kmi: "6.6",  commit: "4a507830d890", suffix: "-ab13636293-4k", group: "all" }
+          - { kmi: "6.6",  commit: "63ce7556864c", suffix: "-ab13994517-4k", group: "all" }
+          - { kmi: "6.6",  commit: "ca30f3b4bef6", suffix: "-abogki440974771-4k", group: "all" }
+          - { kmi: "6.6",  commit: "096cdb6ecefc", suffix: "-ab14358676-4k", group: "all" }
+          - { kmi: "6.6",  commit: "0889fe95bb10", suffix: "-ab14402178-4k", group: "all" }
+          - { kmi: "6.6",  commit: "8e4be6b47e40", suffix: "-ab14134548-4k", group: "all" }
+          - { kmi: "6.6",  commit: "42db9ecb036b", suffix: "-ab14487600-4k", group: "all" }
+          - { kmi: "6.6",  commit: "b99b4586a3ee", suffix: "-ab13754593-4k", group: "all" }
+          - { kmi: "6.6",  commit: "f4dc45704e54", suffix: "-abogki446052083-4k", group: "all" }
+          - { kmi: "6.6",  commit: "3637f4904cf5", suffix: "-ab13944661-4k", group: "all" }
+          - { kmi: "6.6",  commit: "ab8eb70a71b8", suffix: "-ab14350911-4k", group: "all" }
+          - { kmi: "6.6",  commit: "b01b41c2647c", suffix: "-ab15574720-4k", group: "all" }
+          - { kmi: "6.6",  commit: "fe76d1bc97fd", suffix: "-ab14689815-4k", group: "all" }
+          - { kmi: "6.6",  commit: "21be90ecfb5e", suffix: "-ab15480137-4k", group: "all" }
+          - { kmi: "6.6",  commit: "2e6b9c3812c5", suffix: "-ab15114928-4k", group: "all" }
+          - { kmi: "6.6",  commit: "93e223c276e7", suffix: "-abogki500782043-4k", group: "all" }
+          - { kmi: "6.6",  commit: "608a629fedf7", suffix: "-ab15154340-4k", group: "all" }
+          - { kmi: "6.6",  commit: "bf8cd367de7a", suffix: "-ab15314822-4k", group: "all" }
+          - { kmi: "6.6",  commit: "c44b714366cc", suffix: "-abogki519650608-4k", group: "all" }
+          - { kmi: "6.6",  commit: "e56cf6b09cca", suffix: "-ab15511674-4k", group: "all" }
+          - { kmi: "6.6",  commit: "e58033dc8ea6", suffix: "-abogki498046332-4k", group: "all" }
+          - { kmi: "6.6",  commit: "ebdfad32d749", suffix: "-ab15099304-4k", group: "all" }
+
+          # ============ KMI 6.12 (Android 16) — "all" mode ============
+          - { kmi: "6.12", commit: "16e473de48a3", suffix: "-abogki462654244-4k", group: "all" }
+          - { kmi: "6.12", commit: "75e9b1c7ae7c", suffix: "-abogki463945075-4k", group: "all" }
+          - { kmi: "6.12", commit: "82efd98459a2", suffix: "-ab14457512-4k", group: "all" }
+          - { kmi: "6.12", commit: "a8f88ad96df3", suffix: "-ab13929693-4k", group: "all" }
+          - { kmi: "6.12", commit: "b2a876903b49", suffix: "-ab14541642-4k", group: "all" }
+          - { kmi: "6.12", commit: "f1bdb13583da", suffix: "-ab13761046-4k", group: "all" }
+          - { kmi: "6.12", commit: "6e872b4863d6", suffix: "-ab13847919-4k", group: "all" }
+          - { kmi: "6.12", commit: "1d46253471dd", suffix: "-ab15048002-4k", group: "all" }
+          - { kmi: "6.12", commit: "3c4da6410bcb", suffix: "-ab13872285-4k", group: "all" }
+          - { kmi: "6.12", commit: "74ad46052215", suffix: "-ab14494108-4k", group: "all" }
+          - { kmi: "6.12", commit: "665eafb62659", suffix: "-ab14778838-4k", group: "all" }
+          - { kmi: "6.12", commit: "844001fb8721", suffix: "-ab14552068-4k", group: "all" }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip non-selected matrix entries
+        if: ${{ github.event_name != 'push' && matrix.group == 'all' && github.event.inputs.scope == 'current' }}
+        run: echo "scope=current, skipping all-group"; exit 78
+
+      - name: Clone kernel (GKI common)
+        run: |
+          case "${{ matrix.kmi }}" in
+            5.10) BRANCH=android12-5.10 ;;
+            6.1)  BRANCH=android14-6.1  ;;
+            6.6)  BRANCH=android15-6.6  ;;
+            6.12) BRANCH=android16-6.12 ;;
+          esac
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          git clone --depth 200 --branch "$BRANCH" \
+            https://android.googlesource.com/kernel/common kernel-src
+          cd kernel-src
+          git checkout "${{ matrix.commit }}" || \
+            { echo "commit ${{ matrix.commit }} not found on $BRANCH, fetching"; \
+              git fetch --depth 200 origin "${{ matrix.commit }}"; git checkout "${{ matrix.commit }}"; }
+
+      - name: Prepare config + build preps
+        run: |
+          cd kernel-src
+          make ARCH=arm64 mrproper
+          # minimal but valid GKI-ish config: enable what hideproc needs
+          make ARCH=arm64 defconfig
+          ./scripts/config \
+            --enable CONFIG_MODULES \
+            --enable CONFIG_MODULE_UNLOAD \
+            --enable CONFIG_KPROBES \
+            --enable CONFIG_KALLSYMS \
+            --enable CONFIG_KALLSYMS_ALL \
+            --disable CONFIG_MODULE_SIG \
+            --set-str CONFIG_LOCALVERSION "${{ matrix.suffix }}"
+          make ARCH=arm64 olddefconfig
+
+      - name: Build kernel headers/symvers
+        run: |
+          cd kernel-src
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 -j"$(nproc)" modules_prepare
+          # produce Module.symvers via a dummy module build
+          mkdir -p ../dummymod && cp ../src/Makefile ../dummymod/ 2>/dev/null || true
+          echo 'obj-m := dummy.o' > ../dummymod/Makefile
+          echo '#include <linux/module.h>' > ../dummymod/dummy.c
+          echo 'int dummy_var; MODULE_LICENSE("GPL");' >> ../dummymod/dummy.c
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 M=../dummymod modules || true
+
+      - name: Build hideproc.ko
+        run: |
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+            KCFLAGS="-w" \
+            -C "$PWD/kernel-src" M="$PWD/src" modules
+
+      - name: Check output
+        run: |
+          ls -la src/hideproc.ko || (echo "BUILD FAILED"; exit 1)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hideproc-${{ matrix.kmi }}-${{ matrix.commit }}${{ matrix.suffix }}
+          path: src/hideproc.ko
