@@ -12,16 +12,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install build toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang lld make flex bison \
+            libssl-dev bc kmod cpio rsync
+          echo "PATH check:"
+          which clang ld.lld make || true
+          echo "LLVM_VERSION: $(clang --version | head -1)"
+
       - name: Clone kernel (android12-5.10, official GKI 5.10.226 tag)
         run: |
           git clone --depth 1 --branch android12-5.10.226_r00 \
             https://android.googlesource.com/kernel/common kernel-src
 
-      - name: Prepare config
+      - name: Prepare config (gki_defconfig + release string)
         run: |
           cd kernel-src
           make ARCH=arm64 mrproper
-          make ARCH=arm64 defconfig
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 gki_defconfig
           ./scripts/config \
             --enable CONFIG_MODULES \
             --enable CONFIG_MODULE_UNLOAD \
@@ -29,8 +38,9 @@ jobs:
             --enable CONFIG_KALLSYMS \
             --enable CONFIG_KALLSYMS_ALL \
             --disable CONFIG_MODULE_SIG \
+            --disable CONFIG_MODULE_SIG_FORCE \
             --set-str CONFIG_LOCALVERSION "-android12-9-00051-ga13323220e07-ab12931418"
-          make ARCH=arm64 olddefconfig
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
 
       - name: Build kernel preps
         run: |
