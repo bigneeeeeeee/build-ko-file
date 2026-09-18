@@ -12,14 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Clone kernel (android12-5.10)
+      - name: Clone kernel (android12-5.10, official GKI 5.10.226 tag)
         run: |
-          git clone --depth 200 --branch android12-5.10 \
+          git clone --depth 1 --branch android12-5.10.226_r00 \
             https://android.googlesource.com/kernel/common kernel-src
-          cd kernel-src
-          git checkout a13323220e07 || \
-            { echo "commit not found on branch, fetching"; \
-              git fetch --depth 200 origin a13323220e07; git checkout a13323220e07; }
 
       - name: Prepare config
         run: |
@@ -33,7 +29,7 @@ jobs:
             --enable CONFIG_KALLSYMS \
             --enable CONFIG_KALLSYMS_ALL \
             --disable CONFIG_MODULE_SIG \
-            --set-str CONFIG_LOCALVERSION "-ab12931418"
+            --set-str CONFIG_LOCALVERSION "-android12-9-00051-ga13323220e07-ab12931418"
           make ARCH=arm64 olddefconfig
 
       - name: Build kernel preps
